@@ -3,333 +3,197 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>カンペ — Cue Card App</title>
+<title>カンペ</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700;900&family=JetBrains+Mono:wght@400;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700;900&family=JetBrains+Mono:wght@400;700&display=swap');
+:root { --bg:#0a0a0a; --accent:#ff4444; --ui-bg:rgba(18,18,18,0.96); --ui-border:rgba(255,255,255,0.08); --panel-w:320px; }
+* { box-sizing:border-box; margin:0; padding:0; }
+body { background:var(--bg); color:#f0f0f0; font-family:'Noto Sans JP',sans-serif; height:100vh; overflow:hidden; user-select:none; }
 
-  :root {
-    --bg: #0a0a0a;
-    --accent: #ff4444;
-    --ui-bg: rgba(18,18,18,0.96);
-    --ui-border: rgba(255,255,255,0.08);
-    --panel-w: 320px;
-  }
+#display { position:fixed; inset:0; display:flex; align-items:center; justify-content:center; padding:40px 40px 80px; transition:background 0.3s; }
+#display-text { width:100%; text-align:center; line-height:1.15; word-break:break-all; font-weight:900; transition:font-size 0.15s ease,color 0.3s; letter-spacing:-0.02em; white-space:pre-wrap; outline:none; cursor:text; caret-color:currentColor; min-height:1em; }
+#display-text:empty::before { content:attr(data-placeholder); color:rgba(255,255,255,0.1); font-size:18px; font-weight:400; letter-spacing:0.05em; pointer-events:none; }
 
-  * { box-sizing: border-box; margin: 0; padding: 0; }
+/* ── BOTTOM AREA ── */
+#bottom-area {
+  position:fixed; bottom:24px; left:50%; transform:translateX(-50%);
+  z-index:10; display:flex; align-items:center; gap:8px;
+}
 
-  body {
-    background: var(--bg);
-    color: #f0f0f0;
-    font-family: 'Noto Sans JP', sans-serif;
-    height: 100vh;
-    overflow: hidden;
-    user-select: none;
-  }
+/* スロットバー */
+#slot-bar {
+  display:flex; align-items:center; gap:8px;
+  padding:0 14px; height:40px;
+  background:rgba(0,0,0,0.45); border-radius:999px;
+  backdrop-filter:blur(10px); border:1px solid rgba(255,255,255,0.08);
+}
+.slot-dot { width:10px; height:10px; border-radius:50%; border:2px solid rgba(255,255,255,0.35); background:transparent; cursor:pointer; transition:all 0.2s; position:relative; flex-shrink:0; }
+.slot-dot:hover { border-color:rgba(255,255,255,0.7); transform:scale(1.2); }
+.slot-dot.active { background:#fff; border-color:#fff; }
+.slot-dot::after { content:attr(data-name); position:absolute; bottom:calc(100% + 8px); left:50%; transform:translateX(-50%); background:rgba(0,0,0,0.85); color:#fff; font-size:11px; padding:3px 8px; border-radius:4px; white-space:nowrap; opacity:0; pointer-events:none; transition:opacity 0.15s; font-family:'Noto Sans JP',sans-serif; font-weight:400; }
+.slot-dot:hover::after { opacity:1; }
+#slot-add { width:22px; height:22px; border-radius:50%; border:1.5px solid rgba(255,255,255,0.25); background:transparent; color:rgba(255,255,255,0.4); font-size:15px; line-height:1; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all 0.2s; flex-shrink:0; }
+#slot-add:hover { border-color:rgba(255,255,255,0.7); color:#fff; transform:scale(1.1); }
+#slot-add.hidden { display:none; }
 
-  /* ── DISPLAY ── */
-  #display {
-    position: fixed; inset: 0;
-    display: flex; align-items: center; justify-content: center;
-    padding: 40px 40px 80px; /* bottom padding for dots */
-    transition: background 0.3s;
-  }
+/* ── ウィジェットボタン（丸囲み・アイランドなし） ── */
+#widget-btns { display:flex; align-items:center; gap:6px; height:40px; }
 
-  #display-text {
-    width: 100%;
-    text-align: center;
-    line-height: 1.15;
-    word-break: break-all;
-    font-weight: 900;
-    transition: font-size 0.15s ease, color 0.3s;
-    letter-spacing: -0.02em;
-    white-space: pre-wrap;
-    outline: none;
-    cursor: text;
-    caret-color: currentColor;
-    min-height: 1em;
-  }
-  #display-text:empty::before {
-    content: attr(data-placeholder);
-    color: rgba(255,255,255,0.1);
-    font-size: 18px; font-weight: 400;
-    letter-spacing: 0.05em;
-    pointer-events: none;
-  }
+.bar-widget-btn {
+  width:34px; height:34px; border-radius:50%;
+  border:1.5px solid rgba(255,255,255,0.18);
+  background:rgba(0,0,0,0.35);
+  backdrop-filter:blur(10px);
+  color:rgba(255,255,255,0.4); cursor:pointer;
+  display:flex; align-items:center; justify-content:center;
+  transition:all 0.2s; flex-shrink:0; padding:0;
+}
+.bar-widget-btn:hover { border-color:rgba(255,255,255,0.55); color:rgba(255,255,255,0.8); }
+.bar-widget-btn.on { border-color:rgba(255,255,255,0.7); color:#fff; background:rgba(255,255,255,0.1); }
 
-  /* ── SLOT DOTS ── */
-  #slot-bar {
-    position: fixed;
-    bottom: 24px; left: 50%; transform: translateX(-50%);
-    z-index: 10;
-    display: flex; align-items: center; gap: 10px;
-    padding: 8px 14px;
-    background: rgba(0,0,0,0.35);
-    border-radius: 999px;
-    backdrop-filter: blur(8px);
-    border: 1px solid rgba(255,255,255,0.06);
-    transition: opacity 0.3s;
-  }
-  #slot-bar:hover { opacity: 1 !important; }
+/* ── タイマー展開バー ── */
+#timer-bar {
+  display:flex; align-items:center; gap:0;
+  height:40px;
+  background:rgba(0,0,0,0.45); border-radius:999px;
+  backdrop-filter:blur(10px); border:1px solid rgba(255,255,255,0.08);
+  overflow:hidden;
+  max-width:0; opacity:0; padding:0;
+  transition:max-width 0.4s cubic-bezier(0.4,0,0.2,1), opacity 0.3s ease, padding 0.4s cubic-bezier(0.4,0,0.2,1);
+  white-space:nowrap;
+}
+#timer-bar.open { max-width:320px; opacity:1; padding:0 10px; }
 
-  .slot-dot {
-    width: 10px; height: 10px;
-    border-radius: 50%;
-    border: 2px solid rgba(255,255,255,0.35);
-    background: transparent;
-    cursor: pointer;
-    transition: all 0.2s;
-    position: relative;
-    flex-shrink: 0;
-  }
-  .slot-dot:hover {
-    border-color: rgba(255,255,255,0.7);
-    transform: scale(1.2);
-  }
-  .slot-dot.active {
-    background: #fff;
-    border-color: #fff;
-  }
-  /* ツールチップ */
-  .slot-dot::after {
-    content: attr(data-name);
-    position: absolute;
-    bottom: calc(100% + 8px);
-    left: 50%; transform: translateX(-50%);
-    background: rgba(0,0,0,0.8);
-    color: #fff;
-    font-size: 11px;
-    padding: 3px 8px;
-    border-radius: 4px;
-    white-space: nowrap;
-    opacity: 0; pointer-events: none;
-    transition: opacity 0.15s;
-    font-family: 'Noto Sans JP', sans-serif;
-    font-weight: 400;
-  }
-  .slot-dot:hover::after { opacity: 1; }
+/* タイマー操作ボタン */
+.tbtn {
+  width:28px; height:28px; border-radius:50%;
+  border:1.5px solid rgba(255,255,255,0.18);
+  background:transparent; color:rgba(255,255,255,0.55);
+  font-size:10px; cursor:pointer;
+  display:flex; align-items:center; justify-content:center;
+  transition:all 0.2s; flex-shrink:0; padding:0;
+}
+.tbtn:hover { border-color:rgba(255,255,255,0.6); color:#fff; }
+.tbtn.active { background:var(--accent); border-color:var(--accent); color:#fff; }
 
-  /* ＋ボタン */
-  #slot-add {
-    width: 20px; height: 20px;
-    border-radius: 50%;
-    border: 1.5px solid rgba(255,255,255,0.25);
-    background: transparent;
-    color: rgba(255,255,255,0.4);
-    font-size: 14px; line-height: 1;
-    cursor: pointer;
-    display: flex; align-items: center; justify-content: center;
-    transition: all 0.2s;
-    flex-shrink: 0;
-  }
-  #slot-add:hover {
-    border-color: rgba(255,255,255,0.7);
-    color: #fff; transform: scale(1.1);
-  }
-  #slot-add.hidden { display: none; }
+.tbtn-sep { width:1px; height:14px; background:rgba(255,255,255,0.1); flex-shrink:0; margin:0 6px; }
 
-  /* ── WIDGETS ── */
-  #widgets { position: fixed; inset: 0; pointer-events: none; z-index: 5; }
-  .widget {
-    position: absolute;
-    font-family: 'JetBrains Mono', monospace; font-weight: 700;
-    padding: 6px 14px; border-radius: 4px;
-    background: rgba(0,0,0,0.45); backdrop-filter: blur(4px);
-    pointer-events: none; white-space: nowrap;
-    transition: opacity 0.3s;
-  }
-  #clock-widget { top: 18px; left: 50%; transform: translateX(-50%); font-size: 28px; }
-  #timer-widget { top: 18px; left: 50%; transform: translateX(-50%); font-size: 28px; }
-  .widget.hidden { opacity: 0; }
+/* ── WIDGETS ── */
+#widgets { position:fixed; inset:0; pointer-events:none; z-index:5; }
+.widget {
+  position:absolute; font-family:'JetBrains Mono',monospace; font-weight:700;
+  padding:6px 14px; border-radius:4px;
+  background:rgba(0,0,0,0.45); backdrop-filter:blur(4px);
+  white-space:nowrap; transition:opacity 0.3s;
+}
+#clock-widget { top:18px; left:50%; transform:translateX(-50%); font-size:28px; pointer-events:none; }
+#timer-widget { top:18px; left:50%; transform:translateX(-50%); font-size:28px; pointer-events:auto; cursor:text; }
+  #timer-widget.editing { background:rgba(30,30,30,0.8); outline:none; border-radius:6px; }
+.widget.hidden { opacity:0; pointer-events:none !important; }
+#timer-widget.timeup { animation:timeup-flash 0.6s ease-in-out infinite alternate; }
+@keyframes timeup-flash { from{opacity:1;} to{opacity:0.35;} }
 
-  /* ── PANEL TOGGLE ── */
-  #panel-toggle {
-    position: fixed; bottom: 22px; right: 22px;
-    z-index: 200; width: 42px; height: 42px;
-    border-radius: 50%;
-    background: rgba(30,30,30,0.85);
-    border: 1px solid var(--ui-border);
-    color: rgba(255,255,255,0.5); font-size: 18px; cursor: pointer;
-    display: flex; align-items: center; justify-content: center;
-    transition: all 0.2s; backdrop-filter: blur(8px);
-  }
-  #panel-toggle:hover { background: rgba(60,60,60,0.95); color: #fff; transform: scale(1.08); }
+/* フルスクリーンウィジェット時のplaceholder位置 */
+#display.widget-fullscreen { align-items:flex-end; padding-bottom:120px; }
+#display.widget-fullscreen #display-text:empty::before { font-size:14px; }
 
-  /* ── PANEL ── */
-  #panel {
-    position: fixed; top: 0; right: 0;
-    width: var(--panel-w); height: 100vh;
-    background: var(--ui-bg);
-    border-left: 1px solid var(--ui-border);
-    z-index: 100;
-    display: flex; flex-direction: column;
-    transform: translateX(100%);
-    transition: transform 0.35s cubic-bezier(0.4,0,0.2,1);
-    backdrop-filter: blur(20px);
-  }
-  #panel.open { transform: translateX(0); }
+/* ── PANEL TOGGLE ── */
+#panel-toggle { position:fixed; bottom:22px; right:22px; z-index:200; width:42px; height:42px; border-radius:50%; background:rgba(30,30,30,0.85); border:1px solid var(--ui-border); color:rgba(255,255,255,0.5); font-size:18px; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all 0.2s; backdrop-filter:blur(8px); }
+#panel-toggle:hover { background:rgba(60,60,60,0.95); color:#fff; transform:scale(1.08); }
 
-  #panel-header {
-    padding: 18px 20px 14px;
-    border-bottom: 1px solid var(--ui-border);
-    display: flex; align-items: center; justify-content: space-between;
-    flex-shrink: 0;
-  }
-  #panel-header h2 {
-    font-size: 12px; font-weight: 700;
-    letter-spacing: 0.15em; text-transform: uppercase; color: #555;
-  }
-  #panel-close {
-    background: none; border: none; color: #555;
-    font-size: 20px; cursor: pointer; line-height: 1; transition: color 0.2s;
-  }
-  #panel-close:hover { color: #fff; }
+/* ── PANEL ── */
+#panel { position:fixed; top:0; right:0; width:var(--panel-w); height:100vh; background:var(--ui-bg); border-left:1px solid var(--ui-border); z-index:100; display:flex; flex-direction:column; transform:translateX(100%); transition:transform 0.35s cubic-bezier(0.4,0,0.2,1); backdrop-filter:blur(20px); }
+#panel.open { transform:translateX(0); }
+#panel-header { padding:18px 20px 14px; border-bottom:1px solid var(--ui-border); display:flex; align-items:center; justify-content:space-between; flex-shrink:0; }
+#panel-header h2 { font-size:12px; font-weight:700; letter-spacing:0.15em; text-transform:uppercase; color:#555; }
+#panel-close { background:none; border:none; color:#555; font-size:20px; cursor:pointer; line-height:1; transition:color 0.2s; }
+#panel-close:hover { color:#fff; }
+#panel-body { flex:1; overflow-y:auto; padding:14px 20px; scrollbar-width:thin; scrollbar-color:#2a2a2a transparent; }
+#panel-body::-webkit-scrollbar { width:3px; }
+#panel-body::-webkit-scrollbar-thumb { background:#2a2a2a; border-radius:2px; }
+.section { margin-bottom:22px; }
+.section-title { font-size:10px; font-weight:700; letter-spacing:0.15em; text-transform:uppercase; color:#3a3a3a; margin-bottom:10px; }
+.color-row { display:flex; gap:10px; }
+.color-item { flex:1; display:flex; flex-direction:column; gap:5px; }
+.color-item label { font-size:11px; color:#4a4a4a; }
+.color-item input[type=color] { width:100%; height:32px; border:1px solid var(--ui-border); border-radius:5px; background:#111; cursor:pointer; padding:2px; }
+.slider-row { display:flex; flex-direction:column; gap:6px; margin-bottom:10px; }
+.slider-row:last-child { margin-bottom:0; }
+.slider-row label { font-size:11px; color:#4a4a4a; display:flex; justify-content:space-between; }
+input[type=range] { width:100%; accent-color:var(--accent); height:4px; cursor:pointer; }
+.font-select { width:100%; padding:7px 10px; background:rgba(255,255,255,0.04); border:1px solid var(--ui-border); border-radius:5px; color:#bbb; outline:none; font-family:inherit; font-size:13px; cursor:pointer; }
+.btn-full { width:100%; padding:9px; background:rgba(255,255,255,0.04); border:1px solid var(--ui-border); border-radius:6px; color:#bbb; font-size:13px; cursor:pointer; transition:background 0.2s; font-family:inherit; }
+.btn-full:hover { background:rgba(255,255,255,0.09); color:#fff; }
+.hint { font-size:11px; color:#2e2e2e; margin-top:6px; line-height:1.6; }
+.slot-name-list { display:flex; flex-direction:column; gap:6px; }
+.slot-name-row { display:flex; align-items:center; gap:8px; }
+.slot-dot-mini { width:8px; height:8px; border-radius:50%; background:rgba(255,255,255,0.2); flex-shrink:0; }
+.slot-dot-mini.active { background:#fff; }
+.slot-name-input { flex:1; padding:5px 9px; background:rgba(255,255,255,0.04); border:1px solid var(--ui-border); border-radius:5px; color:#ccc; font-size:12px; outline:none; font-family:inherit; transition:border-color 0.2s; }
+.slot-name-input:focus { border-color:rgba(255,255,255,0.18); }
+.slot-del-btn { background:none; border:none; color:#333; font-size:16px; cursor:pointer; line-height:1; transition:color 0.2s; flex-shrink:0; padding:2px 4px; }
+.slot-del-btn:hover { color:var(--accent); }
+#copyright { font-size:10px; color:#2a2a2a; font-family:'JetBrains Mono',monospace; text-align:center; padding:16px 0 6px; letter-spacing:0.06em; border-top:1px solid var(--ui-border); margin-top:8px; }
 
-  #panel-body {
-    flex: 1; overflow-y: auto; padding: 14px 20px;
-    scrollbar-width: thin; scrollbar-color: #2a2a2a transparent;
-  }
-  #panel-body::-webkit-scrollbar { width: 3px; }
-  #panel-body::-webkit-scrollbar-thumb { background: #2a2a2a; border-radius: 2px; }
 
-  .section { margin-bottom: 22px; }
-  .section-title {
-    font-size: 10px; font-weight: 700;
-    letter-spacing: 0.15em; text-transform: uppercase;
-    color: #3a3a3a; margin-bottom: 10px;
-  }
-
-  /* ── COLORS ── */
-  .color-row { display: flex; gap: 10px; }
-  .color-item { flex: 1; display: flex; flex-direction: column; gap: 5px; }
-  .color-item label { font-size: 11px; color: #4a4a4a; }
-  .color-item input[type=color] {
-    width: 100%; height: 32px;
-    border: 1px solid var(--ui-border);
-    border-radius: 5px; background: #111; cursor: pointer; padding: 2px;
-  }
-
-  /* ── TOGGLES ── */
-  .toggle-row {
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 8px 0; border-bottom: 1px solid var(--ui-border);
-  }
-  .toggle-row:last-child { border-bottom: none; }
-  .toggle-label { font-size: 13px; color: #999; }
-  .toggle {
-    position: relative; width: 36px; height: 20px;
-    background: #1e1e1e; border-radius: 10px;
-    cursor: pointer; transition: background 0.2s;
-    border: 1px solid #2a2a2a; flex-shrink: 0;
-  }
-  .toggle.on { background: var(--accent); border-color: var(--accent); }
-  .toggle::after {
-    content: ''; position: absolute; top: 3px; left: 3px;
-    width: 12px; height: 12px; border-radius: 50%; background: #fff; transition: left 0.2s;
-  }
-  .toggle.on::after { left: 17px; }
-
-  /* ── SLIDERS ── */
-  .slider-row { display: flex; flex-direction: column; gap: 6px; margin-bottom: 10px; }
-  .slider-row:last-child { margin-bottom: 0; }
-  .slider-row label { font-size: 11px; color: #4a4a4a; display: flex; justify-content: space-between; }
-  input[type=range] { width: 100%; accent-color: var(--accent); height: 4px; cursor: pointer; }
-
-  /* ── FONT SELECT ── */
-  .font-select, .timer-set input {
-    background: rgba(255,255,255,0.04);
-    border: 1px solid var(--ui-border);
-    border-radius: 5px; color: #bbb; outline: none; font-family: inherit;
-  }
-  .font-select { width: 100%; padding: 7px 10px; font-size: 13px; cursor: pointer; }
-
-  /* ── TIMER ── */
-  .timer-controls { display: flex; gap: 6px; flex-wrap: wrap; }
-  .timer-set { display: flex; gap: 6px; align-items: center; margin-top: 8px; }
-  .timer-set input { width: 56px; padding: 5px 8px; font-size: 13px; text-align: center; font-family: 'JetBrains Mono', monospace; }
-  .timer-set span { font-size: 12px; color: #4a4a4a; }
-
-  .btn-sm {
-    padding: 6px 12px;
-    background: rgba(255,255,255,0.04);
-    border: 1px solid var(--ui-border);
-    border-radius: 5px; color: #bbb;
-    font-size: 12px; cursor: pointer;
-    transition: all 0.2s; font-family: inherit; white-space: nowrap;
-  }
-  .btn-sm:hover { background: rgba(255,255,255,0.09); color: #fff; }
-  .btn-sm.active { background: var(--accent); border-color: var(--accent); color: #fff; }
-
-  .btn-full {
-    width: 100%; padding: 9px;
-    background: rgba(255,255,255,0.04);
-    border: 1px solid var(--ui-border);
-    border-radius: 6px; color: #bbb;
-    font-size: 13px; cursor: pointer;
-    transition: background 0.2s; font-family: inherit;
-  }
-  .btn-full:hover { background: rgba(255,255,255,0.09); color: #fff; }
-
-  /* ── COPYRIGHT ── */
-  #copyright {
-    font-size: 10px; color: #2a2a2a;
-    font-family: 'JetBrains Mono', monospace;
-    text-align: center; padding: 16px 0 6px;
-    letter-spacing: 0.06em;
-    border-top: 1px solid var(--ui-border);
-    margin-top: 8px;
-  }
-
-  /* ── SLOT NAME EDITOR in panel ── */
-  .slot-name-list { display: flex; flex-direction: column; gap: 6px; }
-  .slot-name-row {
-    display: flex; align-items: center; gap: 8px;
-  }
-  .slot-dot-mini {
-    width: 8px; height: 8px; border-radius: 50%;
-    background: rgba(255,255,255,0.2); flex-shrink: 0;
-  }
-  .slot-dot-mini.active { background: #fff; }
-  .slot-name-input {
-    flex: 1; padding: 5px 9px;
-    background: rgba(255,255,255,0.04);
-    border: 1px solid var(--ui-border);
-    border-radius: 5px; color: #ccc;
-    font-size: 12px; outline: none; font-family: inherit;
-    transition: border-color 0.2s;
-  }
-  .slot-name-input:focus { border-color: rgba(255,255,255,0.18); }
-  .slot-del-btn {
-    background: none; border: none; color: #333;
-    font-size: 16px; cursor: pointer; line-height: 1;
-    transition: color 0.2s; flex-shrink: 0; padding: 2px 4px;
-  }
-  .slot-del-btn:hover { color: var(--accent); }
 </style>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-9QW5G8C2JG"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-9QW5G8C2JG');
+</script>
 </head>
 <body>
 
-<!-- DISPLAY -->
 <div id="display">
-  <div id="display-text" contenteditable="true" spellcheck="false"
-    data-placeholder="クリックしてテキストを入力…"></div>
+  <div id="display-text" contenteditable="true" spellcheck="false" data-placeholder="クリックしてテキストを入力…"></div>
 </div>
 
-<!-- SLOT DOTS -->
-<div id="slot-bar">
-  <!-- dots injected by JS -->
-  <button id="slot-add" title="スロットを追加">＋</button>
-</div>
-
-<!-- WIDGETS -->
 <div id="widgets">
   <div class="widget hidden" id="clock-widget">00:00:00</div>
   <div class="widget hidden" id="timer-widget">00:00</div>
 </div>
 
-<!-- PANEL TOGGLE -->
+<div id="bottom-area">
+  <!-- スロットバー -->
+  <div id="slot-bar">
+    <button id="slot-add" title="スロットを追加">＋</button>
+  </div>
+
+  <!-- ウィジェットボタン（丸囲み・アイランドなし） -->
+  <div id="widget-btns">
+    <button id="bar-clock-toggle" class="bar-widget-btn" title="時計">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10"/>
+        <polyline points="12 6 12 12 16 14"/>
+      </svg>
+    </button>
+    <button id="bar-timer-toggle" class="bar-widget-btn" title="タイマー">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="13" r="8"/>
+        <line x1="12" y1="13" x2="12" y2="9"/>
+        <line x1="9"  y1="3"  x2="15" y2="3"/>
+        <line x1="12" y1="1"  x2="12" y2="3"/>
+      </svg>
+    </button>
+  </div>
+
+  <!-- タイマー展開バー -->
+  <div id="timer-bar">
+    
+    <button id="tbtn-start" class="tbtn" title="スタート">▶</button>
+    <button id="tbtn-pause" class="tbtn" title="一時停止" style="margin-left:4px">
+      <svg width="10" height="10" viewBox="0 0 10 10" fill="currentColor"><rect x="1" y="1" width="3" height="8" rx="1"/><rect x="6" y="1" width="3" height="8" rx="1"/></svg>
+    </button>
+    <div class="tbtn-sep"></div>
+    <button id="tbtn-reset" class="tbtn" title="リセット"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg></button>
+  </div>
+</div>
+
 <button id="panel-toggle" title="設定">⚙</button>
 
-<!-- PANEL -->
 <div id="panel">
   <div id="panel-header">
     <h2>カンペ設定</h2>
@@ -337,14 +201,12 @@
   </div>
   <div id="panel-body">
 
-    <!-- スロット名 -->
     <div class="section">
       <div class="section-title">スロット名</div>
       <div class="slot-name-list" id="slot-name-list"></div>
       <div class="hint">スロット名はツールチップで表示されます。</div>
     </div>
 
-    <!-- カラー -->
     <div class="section">
       <div class="section-title">カラー</div>
       <div class="color-row">
@@ -354,7 +216,6 @@
       </div>
     </div>
 
-    <!-- フォント -->
     <div class="section">
       <div class="section-title">フォント</div>
       <select class="font-select" id="font-select">
@@ -367,7 +228,6 @@
       </select>
     </div>
 
-    <!-- 余白・行間 -->
     <div class="section">
       <div class="section-title">余白・行間</div>
       <div class="slider-row">
@@ -380,20 +240,6 @@
       </div>
     </div>
 
-    <!-- 表示オプション -->
-    <div class="section">
-      <div class="section-title">表示オプション</div>
-      <div class="toggle-row">
-        <span class="toggle-label">🕐 現在時刻</span>
-        <div class="toggle" id="toggle-clock"></div>
-      </div>
-      <div class="toggle-row">
-        <span class="toggle-label">⏱ タイマー</span>
-        <div class="toggle" id="toggle-timer"></div>
-      </div>
-    </div>
-
-    <!-- ウィジェットサイズ -->
     <div class="section" id="widget-size-section" style="display:none">
       <div class="section-title">ウィジェットサイズ（通常時）</div>
       <div class="slider-row" id="clock-size-row" style="display:none">
@@ -407,481 +253,388 @@
       <div class="hint">テキストなし時は自動で画面いっぱいに拡大されます。</div>
     </div>
 
-    <!-- タイマー操作 -->
-    <div class="section" id="timer-section" style="display:none">
-      <div class="section-title">タイマー操作</div>
-      <div class="timer-controls">
-        <button class="btn-sm" id="timer-start">▶ スタート</button>
-        <button class="btn-sm" id="timer-pause">⏸ 一時停止</button>
-        <button class="btn-sm" id="timer-reset">↺ リセット</button>
-      </div>
-      <div class="timer-set">
-        <input type="number" id="timer-min" value="5" min="0" max="99">
-        <span>分</span>
-        <input type="number" id="timer-sec" value="0" min="0" max="59">
-        <span>秒でカウントダウン</span>
-      </div>
-      <div class="hint">0分0秒に設定でカウントアップモード</div>
-    </div>
-
-    <!-- 表示 -->
     <div class="section">
       <div class="section-title">表示</div>
       <button class="btn-full" id="fullscreen-btn">⛶ フルスクリーン切替 (F11)</button>
     </div>
 
     <div id="copyright">© 2025 Toshiki Doi</div>
-
   </div>
 </div>
 
 <script>
-// ── STATE ──────────────────────────────────────────────
 const MAX_SLOTS = 3;
-
 const state = {
-  bgColor: '#0a0a0a', textColor: '#f0f0f0', widgetColor: '#ffffff',
-  padding: 40, lineHeight: 1.15,
-  font: "'Noto Sans JP', sans-serif",
-  showClock: false, showTimer: false,
-  clockSize: 28, timerSize: 28,
-  timerRunning: false, timerCountdown: false,
-  timerTotal: 0, timerElapsed: 0,
-  timerInterval: null, clockInterval: null,
-  // slots: [{name, text}, ...]
-  slots: [{ name: 'カンペ 1', text: '' }],
-  activeSlot: 0,
+  bgColor:'#0a0a0a', textColor:'#f0f0f0', widgetColor:'#ffffff',
+  padding:40, lineHeight:1.15, font:"'Noto Sans JP', sans-serif",
+  activeWidget:null,
+  clockSize:28, timerSize:28,
+  timerRunning:false, timerPaused:false, timerCountdown:false,
+  timerTotal:300, timerElapsed:0,
+  timerInterval:null, clockInterval:null,
+  isTimeUp:false,
+  slots:[{name:'カンペ 1',text:''}], activeSlot:0,
 };
 
-// ── ELEMENTS ───────────────────────────────────────────
-const $display       = document.getElementById('display');
-const $displayText   = document.getElementById('display-text');
-const $panel         = document.getElementById('panel');
-const $toggle        = document.getElementById('panel-toggle');
-const $bgColor       = document.getElementById('bg-color');
-const $textColor     = document.getElementById('text-color');
-const $widgetColor   = document.getElementById('widget-color');
-const $fontSelect    = document.getElementById('font-select');
-const $paddingRange  = document.getElementById('padding-range');
-const $paddingVal    = document.getElementById('padding-val');
-const $lhRange       = document.getElementById('lineheight-range');
-const $lhVal         = document.getElementById('lineheight-val');
-const $clockWidget   = document.getElementById('clock-widget');
-const $timerWidget   = document.getElementById('timer-widget');
-const $timerSection  = document.getElementById('timer-section');
-const $timerMin      = document.getElementById('timer-min');
-const $timerSec      = document.getElementById('timer-sec');
-const $slotBar       = document.getElementById('slot-bar');
-const $slotAdd       = document.getElementById('slot-add');
-const $slotNameList  = document.getElementById('slot-name-list');
-const $wSizeSection  = document.getElementById('widget-size-section');
-const $clockSizeRow  = document.getElementById('clock-size-row');
-const $timerSizeRow  = document.getElementById('timer-size-row');
-const $clockSizeRange= document.getElementById('clock-size-range');
-const $timerSizeRange= document.getElementById('timer-size-range');
-const $clockSizeVal  = document.getElementById('clock-size-val');
-const $timerSizeVal  = document.getElementById('timer-size-val');
+function el(id){ return document.getElementById(id); }
+const $display=el('display'), $displayText=el('display-text'), $panel=el('panel');
+const $panelToggle=el('panel-toggle');
+const $clockWidget=el('clock-widget'), $timerWidget=el('timer-widget');
+const $slotBar=el('slot-bar'), $slotAdd=el('slot-add'), $slotNameList=el('slot-name-list');
+const $wSizeSection=el('widget-size-section');
+const $clockSizeRow=el('clock-size-row'), $timerSizeRow=el('timer-size-row');
+const $barClockBtn=el('bar-clock-toggle'), $barTimerBtn=el('bar-timer-toggle');
+const $timerBar=el('timer-bar');
+const $tbtnStart=el('tbtn-start'), $tbtnPause=el('tbtn-pause'), $tbtnReset=el('tbtn-reset');
+// ── STORAGE ──
+function persist(){ try{localStorage.setItem('kanpe-slots',JSON.stringify(state.slots));localStorage.setItem('kanpe-active',state.activeSlot);}catch(e){} }
+function hydrate(){ try{const s=localStorage.getItem('kanpe-slots');const a=localStorage.getItem('kanpe-active');if(s)state.slots=JSON.parse(s);if(a!==null)state.activeSlot=Math.min(parseInt(a),state.slots.length-1);}catch(e){} }
 
-// ── STORAGE ────────────────────────────────────────────
-function persist() {
-  try {
-    localStorage.setItem('kanpe-slots',  JSON.stringify(state.slots));
-    localStorage.setItem('kanpe-active', state.activeSlot);
-  } catch(e) {}
-}
-function hydrate() {
-  try {
-    const s = localStorage.getItem('kanpe-slots');
-    const a = localStorage.getItem('kanpe-active');
-    if (s) state.slots = JSON.parse(s);
-    if (a !== null) state.activeSlot = Math.min(parseInt(a), state.slots.length - 1);
-  } catch(e) {}
-}
-
-// ── TEXT HELPERS ───────────────────────────────────────
-function getDisplayText() {
-  let text = '';
-  const walk = (node) => {
-    if (node.nodeType === 3) { text += node.textContent; }
-    else if (node.nodeType === 1) {
-      const tag = node.tagName.toLowerCase();
-      if (tag === 'br') { text += '\n'; return; }
-      const isBlock = ['div','p','li'].includes(tag);
-      if (isBlock && text.length > 0 && !text.endsWith('\n')) text += '\n';
+// ── TEXT ──
+function getDisplayText(){
+  let text='';
+  const walk=(node)=>{
+    if(node.nodeType===3){text+=node.textContent;}
+    else if(node.nodeType===1){
+      const tag=node.tagName.toLowerCase();
+      if(tag==='br'){text+='\n';return;}
+      const isBlock=['div','p','li'].includes(tag);
+      if(isBlock&&text.length>0&&!text.endsWith('\n'))text+='\n';
       node.childNodes.forEach(walk);
-      if (isBlock && !text.endsWith('\n')) text += '\n';
+      if(isBlock&&!text.endsWith('\n'))text+='\n';
     }
   };
   $displayText.childNodes.forEach(walk);
-  return text.replace(/\n$/, '');
+  return text.replace(/\n$/,'');
 }
-
-function setDisplayText(text) {
-  $displayText.innerHTML = '';
-  if (!text) return;
-  text.split('\n').forEach((line, i) => {
-    if (i > 0) $displayText.appendChild(document.createElement('br'));
-    if (line) $displayText.appendChild(document.createTextNode(line));
+function setDisplayText(text){
+  $displayText.innerHTML='';
+  if(!text)return;
+  text.split('\n').forEach((line,i)=>{
+    if(i>0)$displayText.appendChild(document.createElement('br'));
+    if(line)$displayText.appendChild(document.createTextNode(line));
   });
 }
 
-// ── FONT SIZE ──────────────────────────────────────────
-function calcFontSize() {
-  const text = getDisplayText();
-  if (!text.trim()) return;
-  const W = window.innerWidth  - state.padding * 2;
-  const H = window.innerHeight - state.padding * 2 - 60; // account for dot bar
-  const lines = text.split('\n');
-  const canvas = calcFontSize._c || (calcFontSize._c = document.createElement('canvas'));
-  const ctx = canvas.getContext('2d');
-  let lo = 8, hi = 800, best = 16;
-  while (lo <= hi) {
-    const mid = (lo + hi) >> 1;
-    const tw = Math.max(...lines.map(l => l.length || 0.5)) * mid * 0.58;
-    const th = lines.length * mid * state.lineHeight;
-    if (tw <= W && th <= H) { best = mid; lo = mid + 1; } else hi = mid - 1;
-  }
-  let finalSize = best;
-  for (let fs = best + 10; fs >= 4; fs--) {
-    ctx.font = `900 ${fs}px ${state.font}`;
-    const mw = Math.max(...lines.map(l => ctx.measureText(l).width));
-    if (mw <= W && lines.length * fs * state.lineHeight <= H) { finalSize = fs; break; }
-  }
-  $displayText.style.fontSize = finalSize + 'px';
+// ── FONT SIZE ──
+function calcFontSize(){
+  const text=getDisplayText(); if(!text.trim())return;
+  const W=window.innerWidth-state.padding*2, H=window.innerHeight-state.padding*2-60;
+  const lines=text.split('\n');
+  const canvas=calcFontSize._c||(calcFontSize._c=document.createElement('canvas'));
+  const ctx=canvas.getContext('2d');
+  let lo=8,hi=800,best=16;
+  while(lo<=hi){const mid=(lo+hi)>>1;if(Math.max(...lines.map(l=>l.length||0.5))*mid*0.58<=W&&lines.length*mid*state.lineHeight<=H){best=mid;lo=mid+1;}else hi=mid-1;}
+  let fs=best;
+  for(let s=best+10;s>=4;s--){ctx.font=`900 ${s}px ${state.font}`;if(Math.max(...lines.map(l=>ctx.measureText(l).width))<=W&&lines.length*s*state.lineHeight<=H){fs=s;break;}}
+  $displayText.style.fontSize=fs+'px';
 }
 
-// ── WIDGET SIZES ───────────────────────────────────────
-function measureWidgetSize(text, maxW, maxH) {
-  const canvas = measureWidgetSize._c || (measureWidgetSize._c = document.createElement('canvas'));
-  const ctx = canvas.getContext('2d');
-  let lo = 8, hi = 600, best = 40;
-  while (lo <= hi) {
-    const mid = (lo + hi) >> 1;
-    ctx.font = `700 ${mid}px 'JetBrains Mono', monospace`;
-    if (ctx.measureText(text).width <= maxW - 80 && mid * 1.2 <= maxH) { best = mid; lo = mid + 1; }
-    else hi = mid - 1;
-  }
+// ── WIDGET SIZE ──
+function measureWidget(text,maxW,maxH){
+  const canvas=measureWidget._c||(measureWidget._c=document.createElement('canvas'));
+  const ctx=canvas.getContext('2d');
+  let lo=8,hi=600,best=40;
+  while(lo<=hi){const mid=(lo+hi)>>1;ctx.font=`700 ${mid}px 'JetBrains Mono',monospace`;if(ctx.measureText(text).width<=maxW-80&&mid*1.2<=maxH){best=mid;lo=mid+1;}else hi=mid-1;}
   return best;
 }
 
-function updateWidgetSizes() {
-  const isEmpty = getDisplayText().trim() === '';
-  const W = window.innerWidth, H = window.innerHeight;
-  const cOn = state.showClock, tOn = state.showTimer;
+function updateWidgetSizes(){
+  const isEmpty=getDisplayText().trim()==='';
+  const W=window.innerWidth, H=window.innerHeight;
+  const aw=state.activeWidget;
 
-  const applyFull = (el, size) => {
-    el.style.background = 'none'; el.style.backdropFilter = 'none';
-    el.style.padding = '0'; el.style.borderRadius = '0';
-    el.style.color = state.widgetColor;
-    el.style.fontSize = size + 'px'; el.style.whiteSpace = 'nowrap';
+  // プレースホルダー位置の制御
+  const widgetFullscreen = isEmpty && aw !== null;
+  $display.classList.toggle('widget-fullscreen', widgetFullscreen);
+
+  const applyFull=(elem,size)=>{
+    elem.style.cssText='';
+    Object.assign(elem.style,{
+      top:'50%',left:'50%',right:'auto',
+      transform:'translate(-50%,-50%)',
+      background:'none',backdropFilter:'none',
+      padding:'0',borderRadius:'0',
+      color:state.widgetColor,fontSize:size+'px',whiteSpace:'nowrap'
+    });
   };
-  const reset = (el, size) => {
-    el.style.cssText = '';
-    el.style.fontSize = size + 'px'; el.style.color = state.widgetColor;
+  const applyNormal=(elem,size)=>{
+    elem.style.cssText='';
+    Object.assign(elem.style,{top:'18px',left:'50%',transform:'translateX(-50%)',fontSize:size+'px',color:state.widgetColor});
   };
 
-  if (isEmpty && cOn && tOn) {
-    const halfH = H / 2;
-    const cs = measureWidgetSize($clockWidget.textContent || '00:00:00', W, halfH * 0.8);
-    const ts = measureWidgetSize($timerWidget.textContent || '00:00', W, halfH * 0.8);
-    $clockWidget.style.cssText = '';
-    Object.assign($clockWidget.style, { top:'50%', left:'50%', right:'auto', transform:'translate(-50%, calc(-100% - 8px))' });
-    applyFull($clockWidget, cs);
-    $timerWidget.style.cssText = '';
-    Object.assign($timerWidget.style, { top:'50%', left:'50%', right:'auto', transform:'translate(-50%, 8px)' });
-    applyFull($timerWidget, ts);
-  } else if (isEmpty && cOn) {
-    const s = measureWidgetSize($clockWidget.textContent || '00:00:00', W, H * 0.7);
-    $clockWidget.style.cssText = '';
-    Object.assign($clockWidget.style, { top:'50%', left:'50%', right:'auto', transform:'translate(-50%, -50%)' });
-    applyFull($clockWidget, s);
-  } else if (isEmpty && tOn) {
-    const s = measureWidgetSize($timerWidget.textContent || '00:00', W, H * 0.7);
-    $timerWidget.style.cssText = '';
-    Object.assign($timerWidget.style, { top:'50%', left:'50%', right:'auto', transform:'translate(-50%, -50%)' });
-    applyFull($timerWidget, s);
-  } else if (!isEmpty && cOn && tOn) {
-    // 両方ONでテキストあり → 時計を上、タイマーをその下
-    reset($clockWidget, state.clockSize);
-    $clockWidget.style.top = '18px';
-    $clockWidget.style.left = '50%';
-    $clockWidget.style.transform = 'translateX(-50%)';
-    const clockH = state.clockSize + 12 + 18 + 8; // font + padding + top + gap
-    reset($timerWidget, state.timerSize);
-    $timerWidget.style.top = clockH + 'px';
-    $timerWidget.style.left = '50%';
-    $timerWidget.style.transform = 'translateX(-50%)';
-  } else {
-    if (cOn) reset($clockWidget, state.clockSize);
-    if (tOn) reset($timerWidget, state.timerSize);
+  if(aw==='clock'){
+    if(isEmpty){ applyFull($clockWidget, measureWidget($clockWidget.textContent||'00:00:00',W,H*0.55)); }
+    else { applyNormal($clockWidget,state.clockSize); }
+  } else if(aw==='timer'){
+    const label=state.isTimeUp?'TIME UP':($timerWidget.textContent||'00:00');
+    if(isEmpty){ applyFull($timerWidget, measureWidget(label,W,H*0.55)); }
+    else { applyNormal($timerWidget,state.timerSize); }
   }
 }
 
-// ── RENDER ─────────────────────────────────────────────
-function render() {
-  $display.style.background     = state.bgColor;
-  $displayText.style.color      = state.textColor;
-  $displayText.style.fontFamily = state.font;
-  $displayText.style.lineHeight = state.lineHeight;
-  $display.style.padding        = `${state.padding}px ${state.padding}px 80px`;
-  calcFontSize();
+// ── RENDER ──
+function render(){
+  $display.style.background=state.bgColor;
+  $displayText.style.color=state.textColor;
+  $displayText.style.fontFamily=state.font;
+  $displayText.style.lineHeight=state.lineHeight;
+  $display.style.padding=state.activeWidget&&getDisplayText().trim()===''
+    ? `${state.padding}px ${state.padding}px 120px`
+    : `${state.padding}px ${state.padding}px 80px`;
+  $clockWidget.style.color=state.widgetColor;
+  if(!state.isTimeUp) $timerWidget.style.color=state.widgetColor;
+  calcFontSize(); updateWidgetSizes();
+}
+
+// ── WIDGET TOGGLE ──
+function updateWidgetUI(){
+  const cOn=state.activeWidget==='clock', tOn=state.activeWidget==='timer';
+  $barClockBtn.classList.toggle('on',cOn);
+  $barTimerBtn.classList.toggle('on',tOn);
+  $clockWidget.classList.toggle('hidden',!cOn);
+  $timerWidget.classList.toggle('hidden',!tOn);
+  $timerBar.classList.toggle('open',tOn);
+  $wSizeSection.style.display=(cOn||tOn)?'block':'none';
+  $clockSizeRow.style.display=cOn?'flex':'none';
+  $timerSizeRow.style.display=tOn?'flex':'none';
+}
+function activateClock(){
+  if(state.activeWidget==='clock'){ deactivateAll(); return; }
+  if(state.activeWidget==='timer') stopTimerInterval();
+  state.activeWidget='clock';
+  updateWidgetUI(); startClock(); render();
+}
+function activateTimer(){
+  if(state.activeWidget==='timer'){ deactivateAll(); return; }
+  if(state.activeWidget==='clock') stopClock();
+  state.activeWidget='timer';
+  state.isTimeUp=false;
+  $timerWidget.classList.remove('timeup');
+  updateTimerDisplay();
+  updateWidgetUI(); render();
+}
+function deactivateAll(){
+  if(state.activeWidget==='clock') stopClock();
+  if(state.activeWidget==='timer') stopTimerInterval();
+  state.activeWidget=null; state.isTimeUp=false;
+  $timerWidget.classList.remove('timeup');
+  updateWidgetUI(); render();
+}
+
+$barClockBtn.addEventListener('click',e=>{ e.stopPropagation(); activateClock(); });
+$barTimerBtn.addEventListener('click',e=>{ e.stopPropagation(); activateTimer(); });
+
+// ── CLOCK ──
+function startClock(){
+  if(state.clockInterval)clearInterval(state.clockInterval);
+  const tick=()=>{ const n=new Date(); $clockWidget.textContent=[String(n.getHours()),String(n.getMinutes()).padStart(2,'0'),String(n.getSeconds()).padStart(2,'0')].join(':'); updateWidgetSizes(); };
+  tick(); state.clockInterval=setInterval(tick,1000);
+}
+function stopClock(){ clearInterval(state.clockInterval); state.clockInterval=null; }
+
+// ── TIMER ──
+const fmt=s=>`${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`;
+
+function updateTimerDisplay(){
+  if(state.isTimeUp) return;
+  const rem=state.timerCountdown ? Math.max(0,state.timerTotal-state.timerElapsed) : state.timerElapsed;
+  $timerWidget.textContent=fmt(rem);
+  $timerWidget.style.color=(state.timerCountdown&&rem<=10&&rem>0)?'#ff4444':state.widgetColor;
+}
+
+function startTimer(){
+  if(state.timerInterval||state.isTimeUp) return;
+  if(!state.timerRunning && !state.timerPaused){
+    state.timerElapsed=0;
+    state.timerCountdown=state.timerTotal>0;
+  }
+  state.timerRunning=true;
+  state.timerPaused=false;
+  state.timerInterval=setInterval(()=>{
+    state.timerElapsed++;
+    if(state.timerCountdown){
+      const rem=Math.max(0,state.timerTotal-state.timerElapsed);
+      if(rem===0){
+        clearInterval(state.timerInterval); state.timerInterval=null; state.timerRunning=false;
+        state.isTimeUp=true;
+        $timerWidget.textContent='TIME UP';
+        $timerWidget.style.color=state.widgetColor;
+        $timerWidget.classList.add('timeup');
+        $tbtnStart.classList.remove('active');
+      } else {
+        $timerWidget.textContent=fmt(rem);
+        $timerWidget.style.color=rem<=10?'#ff4444':state.widgetColor;
+      }
+    } else {
+      $timerWidget.textContent=fmt(state.timerElapsed);
+    }
+    updateWidgetSizes();
+  },1000);
+  $tbtnStart.classList.add('active');
+  $tbtnPause.classList.remove('active');
+}
+
+function pauseTimer(){
+  clearInterval(state.timerInterval); state.timerInterval=null; state.timerRunning=false; state.timerPaused=true;
+  $tbtnStart.classList.remove('active'); $tbtnPause.classList.add('active');
+}
+
+function resetTimer(){
+  clearInterval(state.timerInterval); state.timerInterval=null;
+  state.timerRunning=false; state.timerElapsed=0;
+  state.isTimeUp=false;
+  $timerWidget.classList.remove('timeup');
+  
+  state.timerCountdown=state.timerTotal>0;
+  updateTimerDisplay();
+  $tbtnStart.classList.remove('active'); $tbtnPause.classList.remove('active');
   updateWidgetSizes();
 }
 
-// ── SLOT DOTS ──────────────────────────────────────────
-function renderDots() {
-  // remove existing dots (keep the + button)
-  $slotBar.querySelectorAll('.slot-dot').forEach(d => d.remove());
+function stopTimerInterval(){ clearInterval(state.timerInterval); state.timerInterval=null; state.timerRunning=false; }
 
-  state.slots.forEach((slot, i) => {
-    const dot = document.createElement('div');
-    dot.className = 'slot-dot' + (i === state.activeSlot ? ' active' : '');
-    dot.setAttribute('data-name', slot.name);
-    dot.addEventListener('click', () => switchSlot(i));
-    // insert before + button
-    $slotBar.insertBefore(dot, $slotAdd);
+$tbtnStart.addEventListener('click',e=>{ e.stopPropagation(); startTimer(); });
+$tbtnPause.addEventListener('click',e=>{ e.stopPropagation(); pauseTimer(); });
+$tbtnReset.addEventListener('click',e=>{ e.stopPropagation(); resetTimer(); });
+
+
+// ── SLOTS ──
+function renderDots(){
+  $slotBar.querySelectorAll('.slot-dot').forEach(d=>d.remove());
+  state.slots.forEach((slot,i)=>{
+    const dot=document.createElement('div');
+    dot.className='slot-dot'+(i===state.activeSlot?' active':'');
+    dot.setAttribute('data-name',slot.name);
+    dot.addEventListener('click',()=>switchSlot(i));
+    $slotBar.insertBefore(dot,$slotAdd);
   });
-
-  // show/hide + button
-  $slotAdd.classList.toggle('hidden', state.slots.length >= MAX_SLOTS);
-
-  // also update panel name list
+  $slotAdd.classList.toggle('hidden',state.slots.length>=MAX_SLOTS);
   renderSlotNameList();
 }
-
-function switchSlot(i) {
-  if (i === state.activeSlot) return;
-  // 自動保存
-  state.slots[state.activeSlot].text = getDisplayText();
-  // 切り替え
-  state.activeSlot = i;
-  setDisplayText(state.slots[i].text);
-  persist();
-  renderDots();
-  render();
-}
-
-function addSlot() {
-  if (state.slots.length >= MAX_SLOTS) return;
-  // 現在スロットを自動保存
-  state.slots[state.activeSlot].text = getDisplayText();
-  state.slots.push({ name: `カンペ ${state.slots.length + 1}`, text: '' });
-  state.activeSlot = state.slots.length - 1;
-  setDisplayText('');
+function switchSlot(i){
+  if(i===state.activeSlot)return;
+  state.slots[state.activeSlot].text=getDisplayText();
+  state.activeSlot=i; setDisplayText(state.slots[i].text);
   persist(); renderDots(); render();
-  $displayText.focus();
 }
-
-// ── SLOT NAME LIST (in panel) ──────────────────────────
-function renderSlotNameList() {
-  $slotNameList.innerHTML = '';
-  state.slots.forEach((slot, i) => {
-    const row = document.createElement('div');
-    row.className = 'slot-name-row';
-
-    const dot = document.createElement('div');
-    dot.className = 'slot-dot-mini' + (i === state.activeSlot ? ' active' : '');
-
-    const input = document.createElement('input');
-    input.className = 'slot-name-input';
-    input.type = 'text';
-    input.value = slot.name;
-    input.addEventListener('input', e => {
-      state.slots[i].name = e.target.value || `カンペ ${i+1}`;
-      // update tooltip on dot
-      const dots = $slotBar.querySelectorAll('.slot-dot');
-      if (dots[i]) dots[i].setAttribute('data-name', state.slots[i].name);
-      persist();
-    });
-
-    const delBtn = document.createElement('button');
-    delBtn.className = 'slot-del-btn';
-    delBtn.textContent = '×';
-    delBtn.title = '削除';
-    delBtn.style.display = state.slots.length <= 1 ? 'none' : '';
-    delBtn.addEventListener('click', () => deleteSlot(i));
-
-    row.appendChild(dot); row.appendChild(input); row.appendChild(delBtn);
+function addSlot(){
+  if(state.slots.length>=MAX_SLOTS)return;
+  state.slots[state.activeSlot].text=getDisplayText();
+  state.slots.push({name:`カンペ ${state.slots.length+1}`,text:''});
+  state.activeSlot=state.slots.length-1;
+  setDisplayText(''); persist(); renderDots(); render(); $displayText.focus();
+}
+function renderSlotNameList(){
+  $slotNameList.innerHTML='';
+  state.slots.forEach((slot,i)=>{
+    const row=document.createElement('div'); row.className='slot-name-row';
+    const dot=document.createElement('div'); dot.className='slot-dot-mini'+(i===state.activeSlot?' active':'');
+    const input=document.createElement('input'); input.className='slot-name-input'; input.type='text'; input.value=slot.name;
+    input.addEventListener('input',e=>{ state.slots[i].name=e.target.value||`カンペ ${i+1}`; const dots=$slotBar.querySelectorAll('.slot-dot'); if(dots[i])dots[i].setAttribute('data-name',state.slots[i].name); persist(); });
+    const del=document.createElement('button'); del.className='slot-del-btn'; del.textContent='×'; del.style.display=state.slots.length<=1?'none':'';
+    del.addEventListener('click',e=>{ e.stopPropagation(); e.preventDefault(); if(state.slots.length<=1)return; state.slots.splice(i,1); state.activeSlot=Math.min(state.activeSlot,state.slots.length-1); setDisplayText(state.slots[state.activeSlot].text); persist(); renderDots(); render(); });
+    row.appendChild(dot); row.appendChild(input); row.appendChild(del);
     $slotNameList.appendChild(row);
   });
 }
 
-function deleteSlot(i) {
-  if (state.slots.length <= 1) return;
-  if (!confirm(`「${state.slots[i].name}」を削除しますか？`)) return;
-  state.slots.splice(i, 1);
-  state.activeSlot = Math.min(state.activeSlot, state.slots.length - 1);
-  setDisplayText(state.slots[state.activeSlot].text);
-  persist(); renderDots(); render();
-}
+// ── PANEL ──
+const closePanel=()=>$panel.classList.remove('open');
+$panelToggle.addEventListener('click',e=>{ e.stopPropagation(); $panel.classList.toggle('open'); });
+el('panel-close').addEventListener('click',closePanel);
+document.addEventListener('contextmenu',e=>{ if(!$panel.contains(e.target)&&e.target!==$panelToggle){ e.preventDefault(); $panel.classList.add('open'); }});
+document.addEventListener('click',e=>{ if($panel.classList.contains('open')&&!$panel.contains(e.target)&&e.target!==$panelToggle) closePanel(); });
 
-// ── CLOCK ──────────────────────────────────────────────
-function startClock() {
-  if (state.clockInterval) clearInterval(state.clockInterval);
-  const tick = () => {
-    const n = new Date();
-    $clockWidget.textContent = [n.getHours(), n.getMinutes(), n.getSeconds()]
-      .map(v => String(v).padStart(2,'0')).join(':');
-    updateWidgetSizes();
-  };
-  tick(); state.clockInterval = setInterval(tick, 1000);
-}
-function stopClock() { clearInterval(state.clockInterval); }
+// ── DISPLAY INPUT ──
+$displayText.addEventListener('input',()=>{ state.slots[state.activeSlot].text=getDisplayText(); persist(); render(); });
+$displayText.addEventListener('paste',e=>{ e.preventDefault(); document.execCommand('insertText',false,e.clipboardData.getData('text/plain')); });
+$display.addEventListener('mousedown',e=>{ if(e.target!==$display)return; e.preventDefault(); $displayText.focus(); const r=document.createRange(); r.selectNodeContents($displayText); r.collapse(false); const s=window.getSelection(); s.removeAllRanges(); s.addRange(r); });
 
-// ── TIMER ──────────────────────────────────────────────
-const fmt = s => `${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`;
+// ── SETTINGS ──
+el('bg-color').addEventListener('input',e=>{ state.bgColor=e.target.value; render(); });
+el('text-color').addEventListener('input',e=>{ state.textColor=e.target.value; render(); });
+el('widget-color').addEventListener('input',e=>{ state.widgetColor=e.target.value; render(); });
+el('font-select').addEventListener('change',e=>{ state.font=e.target.value; render(); });
+el('padding-range').addEventListener('input',e=>{ state.padding=parseInt(e.target.value); el('padding-val').textContent=state.padding; render(); });
+el('lineheight-range').addEventListener('input',e=>{ state.lineHeight=parseInt(e.target.value)/100; el('lineheight-val').textContent=state.lineHeight.toFixed(2); render(); });
+el('clock-size-range').addEventListener('input',e=>{ state.clockSize=parseInt(e.target.value); el('clock-size-val').textContent=state.clockSize; render(); });
+el('timer-size-range').addEventListener('input',e=>{ state.timerSize=parseInt(e.target.value); el('timer-size-val').textContent=state.timerSize; render(); });
 
-function startTimer() {
-  if (state.timerInterval) return;
-  const total = (parseInt($timerMin.value)||0)*60 + (parseInt($timerSec.value)||0);
-  state.timerTotal = total; state.timerCountdown = total > 0;
-  if (!state.timerRunning) state.timerElapsed = 0;
-  state.timerRunning = true;
-  state.timerInterval = setInterval(() => {
-    state.timerElapsed++;
-    if (state.timerCountdown) {
-      const rem = Math.max(0, state.timerTotal - state.timerElapsed);
-      $timerWidget.textContent = fmt(rem);
-      $timerWidget.style.color = rem <= 10 ? '#ff4444' : state.widgetColor;
-      if (rem === 0) { clearInterval(state.timerInterval); state.timerInterval = null; state.timerRunning = false; }
-    } else {
-      $timerWidget.textContent = fmt(state.timerElapsed);
-    }
-    updateWidgetSizes();
-  }, 1000);
-  document.getElementById('timer-start').classList.add('active');
-  document.getElementById('timer-pause').classList.remove('active');
-}
-function pauseTimer() {
-  clearInterval(state.timerInterval); state.timerInterval = null; state.timerRunning = false;
-  document.getElementById('timer-start').classList.remove('active');
-  document.getElementById('timer-pause').classList.add('active');
-}
-function resetTimer() {
-  clearInterval(state.timerInterval); state.timerInterval = null;
-  state.timerRunning = false; state.timerElapsed = 0;
-  $timerWidget.textContent = '00:00'; $timerWidget.style.color = state.widgetColor;
-  document.getElementById('timer-start').classList.remove('active');
-  document.getElementById('timer-pause').classList.remove('active');
-  updateWidgetSizes();
-}
+$slotAdd.addEventListener('click',e=>{ e.stopPropagation(); addSlot(); });
+el('fullscreen-btn').addEventListener('click',()=>{ if(!document.fullscreenElement) document.documentElement.requestFullscreen().catch(()=>{}); else document.exitFullscreen().catch(()=>{}); closePanel(); });
 
-// ── PANEL ──────────────────────────────────────────────
-const openPanel  = () => $panel.classList.add('open');
-const closePanel = () => $panel.classList.remove('open');
-const togglePanel= () => $panel.classList.toggle('open');
-
-$toggle.addEventListener('click', e => { e.stopPropagation(); togglePanel(); });
-document.getElementById('panel-close').addEventListener('click', closePanel);
-document.addEventListener('contextmenu', e => {
-  if (!$panel.contains(e.target) && e.target !== $toggle) { e.preventDefault(); openPanel(); }
-});
-document.addEventListener('click', e => {
-  if ($panel.classList.contains('open') && !$panel.contains(e.target) && e.target !== $toggle) closePanel();
-});
-
-// ── DISPLAY INPUT ──────────────────────────────────────
-$displayText.addEventListener('input', () => {
-  // リアルタイムで現在スロットに自動保存
-  state.slots[state.activeSlot].text = getDisplayText();
-  persist();
-  render();
-});
-$displayText.addEventListener('paste', e => {
-  e.preventDefault();
-  document.execCommand('insertText', false, e.clipboardData.getData('text/plain'));
-});
-$display.addEventListener('mousedown', e => {
-  if (e.target !== $display) return;
-  e.preventDefault(); $displayText.focus();
-  const r = document.createRange(); r.selectNodeContents($displayText); r.collapse(false);
-  const s = window.getSelection(); s.removeAllRanges(); s.addRange(r);
-});
-
-// ── SETTINGS ───────────────────────────────────────────
-$bgColor.addEventListener('input',     e => { state.bgColor     = e.target.value; render(); });
-$textColor.addEventListener('input',   e => { state.textColor   = e.target.value; render(); });
-$widgetColor.addEventListener('input', e => { state.widgetColor = e.target.value; render(); });
-$fontSelect.addEventListener('change', e => { state.font        = e.target.value; render(); });
-$paddingRange.addEventListener('input', e => {
-  state.padding = parseInt(e.target.value); $paddingVal.textContent = state.padding; render();
-});
-$lhRange.addEventListener('input', e => {
-  state.lineHeight = parseInt(e.target.value)/100; $lhVal.textContent = state.lineHeight.toFixed(2); render();
-});
-$clockSizeRange.addEventListener('input', e => {
-  state.clockSize = parseInt(e.target.value); $clockSizeVal.textContent = state.clockSize; render();
-});
-$timerSizeRange.addEventListener('input', e => {
-  state.timerSize = parseInt(e.target.value); $timerSizeVal.textContent = state.timerSize; render();
-});
-
-// ── TOGGLES ────────────────────────────────────────────
-function updateWidgetSizeSection() {
-  $wSizeSection.style.display = (state.showClock || state.showTimer) ? 'block' : 'none';
-  $clockSizeRow.style.display = state.showClock ? 'flex' : 'none';
-  $timerSizeRow.style.display = state.showTimer ? 'flex' : 'none';
-}
-function makeToggle(id, key, onCb, offCb) {
-  document.getElementById(id).addEventListener('click', () => {
-    state[key] = !state[key];
-    document.getElementById(id).classList.toggle('on', state[key]);
-    state[key] ? (onCb && onCb()) : (offCb && offCb());
-    updateWidgetSizeSection(); render();
-  });
-}
-makeToggle('toggle-clock', 'showClock',
-  () => { $clockWidget.classList.remove('hidden'); startClock(); },
-  () => { $clockWidget.classList.add('hidden'); stopClock(); }
-);
-makeToggle('toggle-timer', 'showTimer',
-  () => { $timerWidget.classList.remove('hidden'); $timerSection.style.display='block'; },
-  () => { $timerWidget.classList.add('hidden'); $timerSection.style.display='none'; pauseTimer(); resetTimer(); }
-);
-
-// ── SLOT ADD ───────────────────────────────────────────
-$slotAdd.addEventListener('click', e => { e.stopPropagation(); addSlot(); });
-
-// ── TIMER BUTTONS ──────────────────────────────────────
-document.getElementById('timer-start').addEventListener('click', startTimer);
-document.getElementById('timer-pause').addEventListener('click', pauseTimer);
-document.getElementById('timer-reset').addEventListener('click', resetTimer);
-
-// ── FULLSCREEN ─────────────────────────────────────────
-document.getElementById('fullscreen-btn').addEventListener('click', () => { toggleFullscreen(); closePanel(); });
-function toggleFullscreen() {
-  if (!document.fullscreenElement) document.documentElement.requestFullscreen().catch(()=>{});
-  else document.exitFullscreen().catch(()=>{});
-}
-
-// ── KEYBOARD ───────────────────────────────────────────
-document.addEventListener('keydown', e => {
-  const inEditor = document.activeElement === $displayText;
-  if (e.key === 'F11') { e.preventDefault(); toggleFullscreen(); }
-  if (e.key === 'Escape') {
-    if ($panel.classList.contains('open')) { closePanel(); return; }
-    if (inEditor) { $displayText.blur(); return; }
-  }
-  if (!inEditor) {
-    if (e.key === ' ') { e.preventDefault(); state.timerRunning ? pauseTimer() : startTimer(); }
-    if (e.key === 'r' || e.key === 'R') { if (state.showTimer) resetTimer(); }
-    if (e.key === 'Tab') { e.preventDefault(); togglePanel(); }
-    // 数字キーでスロット切替
-    const num = parseInt(e.key);
-    if (num >= 1 && num <= MAX_SLOTS && num <= state.slots.length) switchSlot(num - 1);
+// ── KEYBOARD ──
+document.addEventListener('keydown',e=>{
+  const inEditor=document.activeElement===$displayText;
+  const inInput=['INPUT','SELECT'].includes(document.activeElement?.tagName);
+  if(e.key==='F11'){ e.preventDefault(); if(!document.fullscreenElement) document.documentElement.requestFullscreen().catch(()=>{}); else document.exitFullscreen().catch(()=>{}); }
+  if(e.key==='Escape'){ if($panel.classList.contains('open')){ closePanel(); return; } if(inEditor){ $displayText.blur(); return; } }
+  if(!inEditor&&!inInput){
+    if(e.key===' '){ e.preventDefault(); state.timerRunning?pauseTimer():startTimer(); }
+    if(e.key==='r'||e.key==='R'){ if(state.activeWidget==='timer') resetTimer(); }
+    if(e.key==='Tab'){ e.preventDefault(); $panel.classList.toggle('open'); }
+    const num=parseInt(e.key); if(num>=1&&num<=MAX_SLOTS&&num<=state.slots.length) switchSlot(num-1);
   }
 });
 
-// ── RESIZE ─────────────────────────────────────────────
 let _rt;
-window.addEventListener('resize', () => { clearTimeout(_rt); _rt = setTimeout(render, 80); });
+window.addEventListener('resize',()=>{ clearTimeout(_rt); _rt=setTimeout(render,80); });
 
-// ── INIT ───────────────────────────────────────────────
+// ── INIT ──
 hydrate();
 setDisplayText(state.slots[state.activeSlot].text);
-renderDots();
-render();
+renderDots(); updateWidgetUI(); updateTimerDisplay(); render();
 $displayText.focus();
+
+
+
+// タイマークリック編集
+document.getElementById('timer-widget').addEventListener('click', e => {
+  if(state.activeWidget !== 'timer') return;
+  e.stopPropagation();
+  if(state.timerRunning) return;
+  if(state.isTimeUp){ resetTimer(); return; }
+  const tw = document.getElementById('timer-widget');
+  tw.contentEditable = 'true';
+  tw.classList.add('editing');
+  // select all
+  const range = document.createRange();
+  range.selectNodeContents(tw);
+  const sel = window.getSelection();
+  sel.removeAllRanges();
+  sel.addRange(range);
+});
+document.getElementById('timer-widget').addEventListener('blur', () => {
+  const tw = document.getElementById('timer-widget');
+  tw.contentEditable = 'false';
+  tw.classList.remove('editing');
+  const raw = tw.textContent.trim();
+  let total = 0;
+  if(raw.includes(':')) {
+    // MM:SS format
+    const parts = raw.split(':').map(p => parseInt(p) || 0);
+    total = parts[0]*60 + (parts[1]||0);
+  } else {
+    // numeric only: treat as seconds
+    // 5→5s, 30→30s, 100→1m0s, 500→5m0s, 550→5m50s
+    const n = parseInt(raw) || 0;
+    const mins = Math.floor(n / 100);
+    const secs = n % 100;
+    total = mins * 60 + Math.min(secs, 59);
+  }
+  state.timerTotal = Math.max(0, Math.min(5999, total));
+  state.timerElapsed = 0;
+  state.timerCountdown = state.timerTotal > 0;
+  updateTimerDisplay();
+  updateWidgetSizes();
+});
+document.getElementById('timer-widget').addEventListener('keydown', e => {
+  if(e.key === 'Enter'){ e.preventDefault(); document.getElementById('timer-widget').blur(); }
+  if(e.key === 'Escape'){ document.getElementById('timer-widget').contentEditable='false'; document.getElementById('timer-widget').classList.remove('editing'); updateTimerDisplay(); }
+  e.stopPropagation();
+});
+
 </script>
 </body>
 </html>
