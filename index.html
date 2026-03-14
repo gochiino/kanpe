@@ -8,9 +8,9 @@
 @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700;900&family=JetBrains+Mono:wght@400;700&display=swap');
 :root { --bg:#0a0a0a; --accent:#ff4444; --ui-bg:rgba(18,18,18,0.96); --ui-border:rgba(255,255,255,0.08); --panel-w:320px; }
 * { box-sizing:border-box; margin:0; padding:0; }
-body { background:var(--bg); color:#f0f0f0; font-family:'Noto Sans JP',sans-serif; height:100vh; overflow:hidden; user-select:none; }
+body { background:var(--bg); color:#f0f0f0; transition:background 0.3s; font-family:'Noto Sans JP',sans-serif; height:100vh; overflow:hidden; user-select:none; }
 
-#display { position:fixed; inset:0; display:flex; align-items:center; justify-content:center; padding:40px 40px 80px; transition:background 0.3s; }
+#display { position:fixed; inset:0; display:flex; align-items:center; justify-content:center; padding:40px 40px 80px; background:transparent !important; }
 #display-text { width:100%; text-align:center; line-height:1.15; word-break:break-all; font-weight:900; transition:font-size 0.15s ease,color 0.3s; letter-spacing:-0.02em; white-space:pre-wrap; outline:none; cursor:text; caret-color:currentColor; min-height:1em; }
 #display-text:empty::before { content:attr(data-placeholder); color:rgba(255,255,255,0.1); font-size:18px; font-weight:400; letter-spacing:0.05em; pointer-events:none; }
 
@@ -136,8 +136,63 @@ input[type=range] { width:100%; accent-color:var(--accent); height:4px; cursor:p
 #copyright { font-size:10px; color:#2a2a2a; font-family:'JetBrains Mono',monospace; text-align:center; padding:16px 0 6px; letter-spacing:0.06em; border-top:1px solid var(--ui-border); margin-top:8px; }
 
 
+
+/* NEON FLASH */
+@keyframes neon-flash-bg {
+  0%,100% { background:var(--bg); }
+  50%      { background:var(--flash-color,#c80000); }
+}
+@keyframes neon-flash-text {
+  0%,100% { color:var(--text-color-flash-off); }
+  50%      { color:var(--flash-text-color,#000000); }
+}
+body.flashing { animation:neon-flash-bg var(--flash-speed,0.6s) ease-in-out infinite; }
+body.flashing #display-text { animation:neon-flash-text var(--flash-speed,0.6s) ease-in-out infinite; }
+#bar-flash-toggle.on { border-color:rgba(255,100,255,0.8); color:#ff66ff; background:rgba(255,0,255,0.15); }
+
+/* IMAGE LAYER */
+#image-layer { position:fixed; inset:0; pointer-events:none; z-index:6; }
+.img-item { position:absolute; pointer-events:auto; cursor:move; user-select:none; }
+.img-item img { width:100%; height:100%; object-fit:contain; display:block; border-radius:4px; }
+.img-resize-handle {
+  position:absolute; bottom:-6px; right:-6px;
+  width:16px; height:16px; background:#fff; border-radius:50%;
+  cursor:se-resize; opacity:0; transition:opacity 0.2s;
+  border:2px solid rgba(0,0,0,0.3);
+}
+.img-item:hover .img-resize-handle { opacity:0.85; }
+.img-del-btn {
+  position:absolute; top:-9px; right:-9px;
+  width:20px; height:20px; border-radius:50%;
+  background:rgba(220,50,50,0.92); border:none; color:#fff;
+  font-size:12px; cursor:pointer; display:none;
+  align-items:center; justify-content:center; line-height:1;
+}
+.img-item:hover .img-del-btn { display:flex; }
+
+/* DROP HINT */
+#drop-hint {
+  position:fixed; inset:0; z-index:80; margin:20px;
+  border:3px dashed rgba(255,255,255,0.3); border-radius:12px;
+  background:rgba(0,0,0,0.55); backdrop-filter:blur(4px);
+  display:flex; align-items:center; justify-content:center;
+  font-size:22px; color:rgba(255,255,255,0.5); letter-spacing:0.1em;
+  pointer-events:none; opacity:0; transition:opacity 0.2s;
+}
+#drop-hint.visible { opacity:1; }
+
+/* FLASH SETTINGS */
+.flash-row { display:flex; align-items:center; gap:10px; margin-top:6px; }
+.flash-row label { font-size:11px; color:#4a4a4a; flex:1; }
+.flash-row input[type=color] { width:40px; height:28px; border:1px solid var(--ui-border); border-radius:5px; background:#111; cursor:pointer; padding:2px; }
+
+/* FOOTER LINKS */
+#footer-links { display:flex; align-items:center; justify-content:center; gap:16px; padding:10px 0 4px; }
+#footer-links a { color:#383838; text-decoration:none; font-size:11px; transition:color 0.2s; font-family:'JetBrains Mono',monospace; letter-spacing:0.04em; }
+#footer-links a:hover { color:#888; }
+
 </style>
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-9QW5G8C2JG"></script>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-9QW5G8C2JG">
 <script>
   window.dataLayer = window.dataLayer || [];
   function gtag(){dataLayer.push(arguments);}
@@ -156,13 +211,21 @@ input[type=range] { width:100%; accent-color:var(--accent); height:4px; cursor:p
   <div class="widget hidden" id="timer-widget">00:00</div>
 </div>
 
+<div id="image-layer"></div>
+<div id="drop-hint">画像をドロップ</div>
+
 <div id="bottom-area">
   <!-- スロットバー -->
   <div id="slot-bar">
     <button id="slot-add" title="スロットを追加">＋</button>
   </div>
 
-  <!-- ウィジェットボタン（丸囲み・アイランドなし） -->
+  <!-- フラッシュボタン -->
+  <button id="bar-flash-toggle" class="bar-widget-btn" title="強調フラッシュ">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+  </button>
+
+  <!-- ウィジェットボタン -->
   <div id="widget-btns">
     <button id="bar-clock-toggle" class="bar-widget-btn" title="時計">
       <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -200,7 +263,6 @@ input[type=range] { width:100%; accent-color:var(--accent); height:4px; cursor:p
     <button id="panel-close">×</button>
   </div>
   <div id="panel-body">
-
     <div class="section">
       <div class="section-title">スロット名</div>
       <div class="slot-name-list" id="slot-name-list"></div>
@@ -228,25 +290,29 @@ input[type=range] { width:100%; accent-color:var(--accent); height:4px; cursor:p
       </select>
     </div>
 
-    <div class="section">
-      <div class="section-title">余白・行間</div>
-      <div class="slider-row">
-        <label>余白 <span id="padding-val">40</span>px</label>
-        <input type="range" id="padding-range" min="0" max="150" value="40">
+    <div class="section" id="flash-section">
+      <div class="section-title">フラッシュ設定</div>
+      <div class="flash-row">
+        <label>背景色</label>
+        <input type="color" id="flash-color" value="#c80000">
       </div>
-      <div class="slider-row">
-        <label>行間 <span id="lineheight-val">1.15</span></label>
-        <input type="range" id="lineheight-range" min="80" max="200" value="115">
+      <div class="flash-row">
+        <label>文字色</label>
+        <input type="color" id="flash-text-color" value="#000000">
+      </div>
+      <div class="slider-row" style="margin-top:8px">
+        <label>速度 <span id="flash-speed-val">0.6</span>s</label>
+        <input type="range" id="flash-speed-range" min="3" max="20" value="6">
       </div>
     </div>
 
-    <div class="section" id="widget-size-section" style="display:none">
+    <div class="section" id="widget-size-section">
       <div class="section-title">ウィジェットサイズ（通常時）</div>
-      <div class="slider-row" id="clock-size-row" style="display:none">
+      <div class="slider-row" id="clock-size-row">
         <label>時計 <span id="clock-size-val">28</span>px</label>
         <input type="range" id="clock-size-range" min="14" max="200" value="28">
       </div>
-      <div class="slider-row" id="timer-size-row" style="display:none">
+      <div class="slider-row" id="timer-size-row">
         <label>タイマー <span id="timer-size-val">28</span>px</label>
         <input type="range" id="timer-size-range" min="14" max="200" value="28">
       </div>
@@ -258,7 +324,13 @@ input[type=range] { width:100%; accent-color:var(--accent); height:4px; cursor:p
       <button class="btn-full" id="fullscreen-btn">⛶ フルスクリーン切替 (F11)</button>
     </div>
 
-    <div id="copyright">© 2025 Toshiki Doi</div>
+    <div id="copyright">
+      <div id="footer-links">
+        <a href="https://ofuse.me/gochiino" target="_blank" rel="noopener">☕ 投げ銭</a>
+        <a href="https://x.com/gochiino" target="_blank" rel="noopener">Made by @gochiino</a>
+      </div>
+    </div>
+</div>
   </div>
 </div>
 
@@ -375,7 +447,7 @@ function updateWidgetSizes(){
 
 // ── RENDER ──
 function render(){
-  $display.style.background=state.bgColor;
+  document.body.style.background=state.bgColor;
   $displayText.style.color=state.textColor;
   $displayText.style.fontFamily=state.font;
   $displayText.style.lineHeight=state.lineHeight;
@@ -556,8 +628,8 @@ el('bg-color').addEventListener('input',e=>{ state.bgColor=e.target.value; rende
 el('text-color').addEventListener('input',e=>{ state.textColor=e.target.value; render(); });
 el('widget-color').addEventListener('input',e=>{ state.widgetColor=e.target.value; render(); });
 el('font-select').addEventListener('change',e=>{ state.font=e.target.value; render(); });
-el('padding-range').addEventListener('input',e=>{ state.padding=parseInt(e.target.value); el('padding-val').textContent=state.padding; render(); });
-el('lineheight-range').addEventListener('input',e=>{ state.lineHeight=parseInt(e.target.value)/100; el('lineheight-val').textContent=state.lineHeight.toFixed(2); render(); });
+
+
 el('clock-size-range').addEventListener('input',e=>{ state.clockSize=parseInt(e.target.value); el('clock-size-val').textContent=state.clockSize; render(); });
 el('timer-size-range').addEventListener('input',e=>{ state.timerSize=parseInt(e.target.value); el('timer-size-val').textContent=state.timerSize; render(); });
 
@@ -634,6 +706,103 @@ document.getElementById('timer-widget').addEventListener('keydown', e => {
   if(e.key === 'Escape'){ document.getElementById('timer-widget').contentEditable='false'; document.getElementById('timer-widget').classList.remove('editing'); updateTimerDisplay(); }
   e.stopPropagation();
 });
+
+// ── FLASH ──
+const $barFlashBtn = document.getElementById('bar-flash-toggle');
+let flashOn = false;
+function setFlashColor(c,tc,s){
+  document.documentElement.style.setProperty('--flash-color', c);
+  document.documentElement.style.setProperty('--flash-text-color', tc);
+  document.documentElement.style.setProperty('--flash-speed', s+'s');
+}
+$barFlashBtn.addEventListener('click', e => {
+  e.stopPropagation();
+  flashOn = !flashOn;
+  $barFlashBtn.classList.toggle('on', flashOn);
+  document.body.classList.toggle('flashing', flashOn);
+
+});
+document.getElementById('flash-color').addEventListener('input', e => {
+  setFlashColor(e.target.value, document.getElementById('flash-text-color').value, document.getElementById('flash-speed-range').value / 10);
+});
+document.getElementById('flash-text-color').addEventListener('input', e => {
+  setFlashColor(document.getElementById('flash-color').value, e.target.value, document.getElementById('flash-speed-range').value / 10);
+});
+document.getElementById('flash-speed-range').addEventListener('input', e => {
+  const s = e.target.value / 10;
+  document.getElementById('flash-speed-val').textContent = s.toFixed(1);
+  setFlashColor(document.getElementById('flash-color').value, document.getElementById('flash-text-color').value, s);
+});
+
+// ── IMAGE DROP ──
+const $imageLayer = document.getElementById('image-layer');
+const $dropHint   = document.getElementById('drop-hint');
+let dragCounter = 0;
+
+document.addEventListener('dragenter', e => {
+  if([...e.dataTransfer.types].includes('Files')){ dragCounter++; $dropHint.classList.add('visible'); }
+});
+document.addEventListener('dragleave', e => {
+  dragCounter--; if(dragCounter<=0){ dragCounter=0; $dropHint.classList.remove('visible'); }
+});
+document.addEventListener('dragover', e => e.preventDefault());
+document.addEventListener('drop', e => {
+  e.preventDefault(); dragCounter=0; $dropHint.classList.remove('visible');
+  [...e.dataTransfer.files].forEach(file => {
+    if(!file.type.startsWith('image/')) return;
+    const reader = new FileReader();
+    reader.onload = ev => addImage(ev.target.result, e.clientX, e.clientY);
+    reader.readAsDataURL(file);
+  });
+});
+
+function addImage(src, cx, cy){
+  const wrap = document.createElement('div');
+  wrap.className = 'img-item';
+  const W=Math.round(window.innerWidth*0.4);
+  const H=Math.round(W*0.65);
+  wrap.style.cssText = 'left:'+(cx-W/2)+'px;top:'+(cy-H/2)+'px;width:'+W+'px;height:'+H+'px;';
+
+  const img = document.createElement('img');
+  img.src = src; img.draggable = false;
+
+  const handle = document.createElement('div');
+  handle.className = 'img-resize-handle';
+
+  const delBtn = document.createElement('button');
+  delBtn.className = 'img-del-btn'; delBtn.textContent = '×';
+  delBtn.addEventListener('click', e => { e.stopPropagation(); wrap.remove(); });
+
+  wrap.appendChild(img); wrap.appendChild(handle); wrap.appendChild(delBtn);
+  $imageLayer.appendChild(wrap);
+
+  // drag to move
+  let dx=0,dy=0,dragging=false;
+  wrap.addEventListener('mousedown', e => {
+    if(e.target===handle||e.target===delBtn) return;
+    e.preventDefault(); dragging=true;
+    dx=e.clientX-wrap.offsetLeft; dy=e.clientY-wrap.offsetTop;
+  });
+  window.addEventListener('mousemove', e => {
+    if(!dragging) return;
+    wrap.style.left=(e.clientX-dx)+'px'; wrap.style.top=(e.clientY-dy)+'px';
+  });
+  window.addEventListener('mouseup', ()=>{ dragging=false; });
+
+  // resize handle
+  let resizing=false,rsx=0,rsy=0,rw=0,rh=0;
+  handle.addEventListener('mousedown', e => {
+    e.preventDefault(); e.stopPropagation(); resizing=true;
+    rsx=e.clientX; rsy=e.clientY; rw=wrap.offsetWidth; rh=wrap.offsetHeight;
+  });
+  window.addEventListener('mousemove', e => {
+    if(!resizing) return;
+    const nw=Math.max(60,rw+(e.clientX-rsx));
+    const nh=Math.max(40,rh+(e.clientY-rsy));
+    wrap.style.width=nw+'px'; wrap.style.height=nh+'px';
+  });
+  window.addEventListener('mouseup', ()=>{ resizing=false; });
+}
 
 </script>
 </body>
